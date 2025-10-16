@@ -16,6 +16,20 @@ services:
       - "8100:80"   # browser will now access Django via Nginx
     networks:
       - loggerhub_net
+  
+  nginx_processor:
+    image: nginx:latest
+    container_name: processor-nginx
+    depends_on:
+      - processor_service
+    volumes:
+      - ../services/processor_service/staticfiles:/app/staticfiles:ro
+      - ../services/processor_service/media:/app/media:ro
+      - ./nginx/processor.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "8101:80"   # browser → localhost:8101 → nginx_processor
+    networks:
+      - loggerhub_net
 
   postgres:
     build:
@@ -79,8 +93,12 @@ services:
     build:
       context: ../services/api_gateway
       dockerfile: Dockerfile
+      args:
+        APP_ENV: ${APP_ENV}     # Pick from .env (args available at build time)
     env_file:
       - ./envs/api_gateway.env
+    environment:
+      - APP_ENV=${APP_ENV}      # Pass it into container too (environment available at runtine inside container)
     depends_on:
       - postgres
       - redis
@@ -92,7 +110,7 @@ services:
     #   - "8100:8000"
     networks:
       - loggerhub_net
-
+  
   processor_service:
     build:
       context: ../services/processor_service
@@ -106,8 +124,8 @@ services:
       - opensearch
     volumes:
       - ../services/processor_service:/app:cached
-    ports:
-      - "8101:8001"
+    # ports:
+    #   - "8101:8001"
     networks:
       - loggerhub_net
 
@@ -117,13 +135,15 @@ services:
       dockerfile: Dockerfile
     env_file:
       - ./envs/processor.env
-    command: ["./entrypoint.sh", "celery-worker"]
+    command: ["/entrypoint.sh", "celery", "-A", "config", "worker", "-l", "info"]
     depends_on:
       - processor_service
       - redis
       - postgres
     networks:
       - loggerhub_net
+
+
 
   search_service:
     build:

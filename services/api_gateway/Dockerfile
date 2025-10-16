@@ -1,6 +1,10 @@
 # services/api_gateway/Dockerfile
 FROM python:3.11-slim
 
+ARG APP_ENV=production
+ENV APP_ENV=${APP_ENV}
+
+
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
@@ -23,10 +27,12 @@ COPY . /app
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
+COPY entrypoint.web.sh /entrypoint.web.sh
+RUN chmod +x /entrypoint.web.sh
+
 EXPOSE 8000
 
 ENTRYPOINT ["/entrypoint.sh"]
 # If a Django project exists, the container will run this by default.
 # If no Django project, entrypoint will keep the container alive instead.
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
-
+CMD ["/entrypoint.web.sh"]

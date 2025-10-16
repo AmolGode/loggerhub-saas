@@ -2,7 +2,10 @@ from .base import *
 import os
 
 DEBUG = os.getenv("DEBUG", "True").lower() == "true"
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*").split(",")
+ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+
+#  Important for Nginx proxy (use the same port you access in browser)
+CSRF_TRUSTED_ORIGINS = ["http://localhost:8100"]
 
 # Database (using environment variables)
 DATABASES = {
